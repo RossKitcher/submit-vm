@@ -1,0 +1,36 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    hostname: rabbitmq-host
+    container_name: rabbitmq-ctr
+    restart: unless-stopped
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+      - RABBITMQ_USER=root
+      - RABBITMQ_PASS=root
+    env_file:
+    - .env
+    ports:
+      - ${RMQ_CONTAINER_PORT}:${RMQ_PORT}   # Message broker. Make ports same as we won't be accessing from internet
+      - ${RMQMANAGER_CONTAINER_PORT}:${RMQMANAGER_PORT} # Management interface. Make ports same as it's meant to be accessed via the internet
+    volumes:
+      - rabbit-vol:/var/lib/rabbitmq/  # Where to store the queued data
+  submit:
+    image: rkitcher/submit
+    build:
+      context: ./submit 
+    container_name: submit-ctr
+    env_file:
+    - .env
+    restart: always
+    depends_on:
+    - rabbitmq
+    ports:
+    - ${SUB_CONTAINER_PORT}:${SUB_PORT}
+    volumes:
+    - /var/backups/app:/var/backups/app
+    - /var/backups/app/types.txt:/var/backups/app/types.txt
+volumes:
+  rabbit-vol:
+    driver: local

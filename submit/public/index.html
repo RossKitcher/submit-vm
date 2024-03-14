@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="main.css">
+    <title>Submit</title>
+  </head>
+  <body>
+    <div class="wrapper">
+      
+
+      <div class="form">
+        <div class="input-container">
+            <label class="form-label" for="selectType">Select Type:</label><br>
+            <div id="selectType" name="selectType" class="dropdown">
+                <button id="dropdownButton" onClick="dropdownClick()" class="drop-button">None Selected</button>
+                <div id="dropdownItems" class="drop-content"></div>
+            </div>
+        </div>
+        <div class="input-container">
+            <label class="form-label" for="setup">Setup:</label><br>
+            <input type="text" id="setup" name="setup"><br>
+        </div>
+        
+        <div class="input-container" >
+            <label class="form-label" for="punchline">Punchline:</label><br>
+            <input type="text" id="punchline" name="punchline"><br>
+        </div>
+        
+        <button class="submit-button" onClick="submitClick()">Submit</button><br>
+    </div>
+
+    </div>
+    <script src="main.js"></script>
+  </body>
+</html>
