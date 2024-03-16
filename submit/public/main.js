@@ -27,7 +27,7 @@ window.onclick = function(event) {
 }
 
 async function getTypes() {
-    let APIEndPoint = "https://distsystem.uksouth.cloudapp.azure.com/sub/types";
+    let APIEndPoint = "https://distsystem.uksouth.cloudapp.azure.com/submit/types";
     
     try {
         const payload = await fetch(APIEndPoint);
@@ -74,7 +74,7 @@ async function submitClick() {
     console.log(data);
 
     try {
-        await fetch ("https://distsystem.uksouth.cloudapp.azure.com/sub/sub", {
+        await fetch ("https://distsystem.uksouth.cloudapp.azure.com/submit/sub", {
             method: "POST",
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(data)

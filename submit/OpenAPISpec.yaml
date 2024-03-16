@@ -9,7 +9,7 @@ servers:
     description: Submit Microservice server.
 
 paths:
-  /sub/types:
+  /submit/types:
     get:
       summary: Returns a list of available joke types.
       description: Only returns a JSON formatted list, no HTML is returned.
@@ -30,7 +30,7 @@ paths:
           description: Internal server error. 
         default:
           description: Unexpected error.
-  /sub/sub:
+  /submit/sub:
     post:
       summary: Creates a new Joke.
       requestBody:
