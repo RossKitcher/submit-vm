@@ -1,0 +1,58 @@
+openapi: 3.0.0
+info:
+  title: Submit Microservice
+  description: Service that submits Jokes to the system for moderation.
+  version: 1.0.0
+
+servers:
+  - url: https://distsystem.uksouth.cloudapp.azure.com/
+    description: Submit Microservice server.
+
+paths:
+  /sub/types:
+    get:
+      summary: Returns a list of available joke types.
+      description: Only returns a JSON formatted list, no HTML is returned.
+      responses:
+        '200':
+          description: A JSON array of available joke types.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      example: Knock Knock
+        '500':
+          description: Internal server error. 
+        default:
+          description: Unexpected error.
+  /sub/sub:
+    post:
+      summary: Creates a new Joke.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  example: Dad Joke
+                setup:
+                  type: string
+                  example: What's orange and sounds like a parrot?
+                punchline:
+                  type: string
+                  example: A carrot!
+      responses:
+        '201':
+          description: Joke created.
+        '500':
+          description: Failed to create joke. Invalid data.
+        default:
+          description: Unexpected error.

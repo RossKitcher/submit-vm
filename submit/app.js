@@ -8,23 +8,11 @@ const amqp = require("amqplib") // Documentation here: https://www.npmjs.com/pac
 const cors = require('cors');
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
-
-// Swagger definition
-const swaggerOptions = {
-  swaggerDefinition: {
-    info: {
-      title: "Submit Microservice Documenation",
-      version: "1.0.0",
-      description: "Microservice to submit new jokes to the system.",
-    },
-  },
-  apis: ["./app.js"]
-}
-
-const swaggerSpec = swaggerJsdoc(swaggerOptions);
+const YAML = require('yamljs');
+const staticFiles = path.join(__dirname, '/public');
 
 app.use(cors()); // Use cors to allow cross origin requests.
-app.use(express.static((path.join(__dirname, '/public'))));
+app.use(express.static(staticFiles));
 app.use(express.json());
 
 const APP_PRODUCER_PORT = process.env.SUB_PORT || 3200  // Provide default if env var isn't there for some reason
@@ -33,6 +21,7 @@ const RMQ_USERNAME = process.env.RMQ_USERNAME || "admin"
 const RMQ_PASSWORD = process.env.RMQ_PASSWORD || "admin"
 const RMQ_HOST = process.env.RMQ_HOST || "localhost"
 const QUEUE_NAME = process.env.SUB_QUEUE_NAME || "SUBMITTED_JOKES"
+const RMQ_URL = `amqp://${RMQ_USERNAME}:${RMQ_PASSWORD}@${RMQ_HOST}:${RMQ_PRODUCER_PORT}/`;
 
 let gConnection;
 let gChannel;
@@ -40,20 +29,8 @@ let gChannel;
 // ================================ Routing ==============================================
 
 // Serve Swagger compliant documentation at tge /docs route.
-app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(YAML.load(path.join(__dirname, 'OpenAPISpec.yaml'))));
 
-/**
- * @swagger
- * /sub/types:
- *   get:
- *     summary: Get all joke types.
- *     description: Gets joke types from the MySQL database. If the database is inaccessible, then the most recent types backup is returned.
- *     responses:
- *       200:
- *         description: Successful request.
- *       500:
- *         description: Internal server error.
- */
 app.get("/types", async (req, res) => {
   let APIEndPoint = "http://10.0.0.5:4000/types";
 
@@ -74,18 +51,6 @@ app.get("/types", async (req, res) => {
 
 });
 
-/**
- * @swagger
- * /sub/sub:
- *   post:
- *     summary: Submit a new joke to the system.
- *     description: Expects parameters in the request body named type, setup and punchline.
- *     responses:
- *       202:
- *         description: Successful response.
- *       500:
- *         description: Internal server error.
- */
 app.post("/sub", async (req,res) => {
     try {
         await sendJoke(gChannel, req.body)
@@ -93,6 +58,11 @@ app.post("/sub", async (req,res) => {
     } catch (err) {
         res.status(500).send(err)
     }
+});
+
+// Catch all unexpected routes
+app.get('*', async (req,res) => {
+  res.status(404).sendFile(path.join(staticFiles, '404.html'));
 });
 
 const server = app.listen(APP_PRODUCER_PORT, () => console.log(`Listening on port ${APP_PRODUCER_PORT}`));
@@ -112,7 +82,7 @@ async function createConnection(conStr) {
 
   } catch (err) {
       console.log(`Failed to connect to queue in createConection function`)
-      throw err
+      return false;
   }
 }
 
@@ -138,28 +108,26 @@ async function sendJoke(channel, joke) {
   }
 }
 
-// Anonymous function to execute on app startup.
-(async () => {
-  const conStr = `amqp://${RMQ_USERNAME}:${RMQ_PASSWORD}@${RMQ_HOST}:${RMQ_PRODUCER_PORT}/`
-  try {
-    console.log(`Trying to connect to RabbitMQ at ${RMQ_HOST}:${RMQ_PRODUCER_PORT}`) // Only give this level of detail away in testing
-    const rmq = await createConnection(conStr) // amqplib is promise based so need to initialise it in a function as await only works in an async function
-    gConnection = rmq.connection  // Globally available in the file for other functions to use if needed
-    gChannel = rmq.channel
-  }
-  catch (err) {
-    console.log(err.message)
-    if (gConnection) {
-      closeConnection(gConnection, gChannel)
-      console.log(`Closing connections`)
+async function connectToRabbitMQ() {
+  let connected;
+  while (!connected) {
+    const url = RMQ_URL;
+    const result = await createConnection(url);
+
+    if (result) {
+
+    if (result) {
+      connected = true;
+      gConnection = result.connection;
+      gChannel = result.channel;
+      return;
     }
-    throw err  // kill the app
+    } else {
+      // Retry connecting to the next URL after 3 seconds
+      console.log(`Retrying connection to RabbitMQ service at ${RMQ_URL} in 3 seconds...`);
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
   }
-})().catch((err) => { 
-  // On error, shutdown.
-  console.log(`Shutting down node server listening on port ${APP_PRODUCER_PORT}`)
-  server.close()   
-  process.exit(1) 
-}) // () means call it now
-  
-  
+}
+
+connectToRabbitMQ();
