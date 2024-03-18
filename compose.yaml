@@ -20,6 +20,7 @@ services:
   # Submit service.
   submit:
     image: rkitcher/submit
+    pull_policy: always
     build:
       context: ./submit 
     container_name: submit-ctr
